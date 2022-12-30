@@ -1,4 +1,4 @@
-console.log('✅ㅤIniciando...')
+console.log('✅ㅤStarting...')
 import { join, dirname } from 'path'
 import { createRequire } from "module";
 import { fileURLToPath } from 'url'
@@ -17,7 +17,7 @@ say('Mystic - Bot\nWhatsApp Bot MD', {
 font: 'chrome',
 align: 'center',
 gradient: ['red', 'magenta']})
-say(`Bot creado por Bruno Sobrino`, {
+say(`Bot created by Bruno Sobrino`, {
 font: 'console',
 align: 'center',
 gradient: ['red', 'magenta']})
@@ -32,7 +32,7 @@ if (isRunning) return
 isRunning = true
 let args = [join(__dirname, file), ...process.argv.slice(2)]
 
-say('Ajuste la pantalla para escanear el codigo QR', {
+say('Set the screen to scan the QR code', {
 font: 'console',
 align: 'center',
 gradient: ['red', 'magenta']})
@@ -54,7 +54,7 @@ p.send(process.uptime())
 break }})
 p.on('exit', (_, code) => {
 isRunning = false
-console.error('❎ㅤOcurrio un error inesperado:', code)
+console.error('❎ㅤAn unexpected error occurred:', code)
   
 p.process.kill()
 isRunning = false
