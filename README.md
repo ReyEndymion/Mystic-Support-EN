@@ -1,53 +1,53 @@
 # 💫 𝐌𝐘𝐒𝐓𝐈𝐂 𝐒𝐔𝐏𝐏𝐎𝐑𝐓 💫
 
-### `—◉ 👑 CUENTAS OFICIALES 👑`
-- PAGINA: [https://www.atom.bio/theshadowbrokers-team](https://www.atom.bio/theshadowbrokers-team)
+### `—◉ 👑 OFFICIAL ACCOUNTS 👑`
+- PAGE: [https://www.atom.bio/theshadowbrokers-team](https://www.atom.bio/theshadowbrokers-team)
 
-### `—◉ ⚙️ AJUSTES ⚙️`
-- CLONAR EL REPOSITORIO [Aqui](https://github.com/BrunoSobrino/Mystic-Support/fork)
-- CAMBIAR NÚMERO DEL OWNER [Aqui](https://github.com/BrunoSobrino/Mystic-Support/blob/master/config.js)
+### `—◉ ⚙️ ADJUSTMENTS ⚙️`
+- CLONE REPOSITORY [Aqui](https://github.com/BrunoSobrino/Mystic-Support-EN/fork)
+- CHANGE OWNER'S NUMBER [Aqui](https://github.com/BrunoSobrino/Mystic-Support-EN/blob/master/config.js)
 
-### `—◉ 💫 ACTIVAR EN KOYEB 💫`
+### `—◉ 💫 ACTIVATE ON KOYEB 💫`
 
-[![Deploy to Koyeb](https://www.koyeb.com/static/images/deploy/button.svg)](https://app.koyeb.com/deploy?type=git&repository=github.com/BrunoSobrino/Mystic-Support&branch=baileys&name=mysticsupport)
+[![Deploy to Koyeb](https://www.koyeb.com/static/images/deploy/button.svg)](https://app.koyeb.com/deploy?type=git&repository=github.com/BrunoSobrino/Mystic-Support-EN&branch=master&name=mysticsupport)
 
-### `—◉ 💥 INSTALACION VIA TERMUX 💥`
+### `—◉ 💥 INSTALLATION VIA TERMUX 💥`
 
 ```bash
 cd && termux-setup-storage
 apt-get update -y && apt-get upgrade -y
 pkg install -y git nodejs ffmpeg imagemagick
-git clone https://github.com/BrunoSobrino/Mystic-Support.git && cd Mystic-Support
+git clone https://github.com/BrunoSobrino/Mystic-Support-EN.git && cd Mystic-Support
 npm start
 ```
 
-### `—◉ ✔️ ACTIVAR EN CASO DE DETENERSE EN TERMUX ✔️`
+### `—◉ ✔️ ACTIVATE IN CASE OF SHUTDOWN IN TERMUX ✔️`
 ```bash
-ESCRIBE LOS SIGUIENTES COMANDOS UNO POR UNO:
+TYPE THE FOLLOWING COMMANDS ONE AT A TIME:
 > cd 
-> cd Mystic-Support
+> cd Mystic-Support-EN
 > npm start
 ```
 
-### `—◉ 👽 OBTENER OTRO CODIGO QR EN TERMUX 👽`
-- DETENER EL BOT DANDO CLICK EN EL SIMBOLO CTROL EN TERMUX MAS LA LETRA Z EN SU TECLADO MOVIL HASTA QUE SALGA ALGO EN VERDE SIMILAR A Mystic-Support $  
+### `—◉ 👽 GET ANOTHER QR CODE ON TERMUX 👽`
+- STOP THE BOT BY CLICKING ON THE CTROL SYMBOL IN TERMUX PLUS THE LETTER Z ON YOUR MOBILE KEYBOARD UNTIL SOMETHING GREEN COMES UP SIMILAR TO Mystic-Support-EN $  
 ```bash
-ESCRIBE LOS SIGUIENTES COMANDOS UNO POR UNO:
+TYPE THE FOLLOWING COMMANDS ONE AT A TIME:
 > cd 
-> cd Mystic-Support
+> cd Mystic-Support-EN
 > rm -rf MysticSession
 > npm start
 ```
 
-### `—◉ 🔥 ACTIVAR EN BOXMINEHOST 🔥`
+### `—◉ 🔥 ACTIVATE IN BOXMINEHOST 🔥`
 <a href="https://boxmineworld.com"><img src="https://raw.githubusercontent.com/BrunoSobrino/Mystic-Support/master/src/Pre%20Bot%20Publi.png" width="450" height="240" alt="JPG"/></a>
-- Pagina Oficial: [https://boxmineworld.com](https://boxmineworld.com)
+- Page Oficial: [https://boxmineworld.com](https://boxmineworld.com)
 - Dashboard: [https://dash.boxmineworld.com](https://dash.boxmineworld.com)
 - Panel: [https://panel.boxmineworld.com](https://panel.boxmineworld.com)
 - Tutorial: [https://youtu.be/eC9TfKICpcY](https://youtu.be/eC9TfKICpcY)
-- Dudas UNICAMENTE SOBRE EL HOST: [https://discord.gg/84qsr4v](https://discord.gg/84qsr4v) (Preguntar por Vicemi)
+- Questions ONLY ABOUT HOST: [https://discord.gg/84qsr4v](https://discord.gg/84qsr4v) (Ask for Vicemi)
 
-## `EDITOR & PORPIETARIO DEL BOT` 
+## `EDITOR & OWNER OF THE BOT` 
 <a href="https://github.com/BrunoSobrino"><img src="https://github.com/BrunoSobrino.png" width="250" height="250" alt="BrunoSobrino"/></a>
   
 `TheMystic-Bot-MD - By Bruno Sobrino`
