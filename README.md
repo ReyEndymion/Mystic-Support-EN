@@ -4,8 +4,8 @@
 - PAGE: [https://www.atom.bio/theshadowbrokers-team](https://www.atom.bio/theshadowbrokers-team)
 
 ### `—◉ ⚙️ ADJUSTMENTS ⚙️`
-- CLONE REPOSITORY [Aqui](https://github.com/BrunoSobrino/Mystic-Support-EN/fork)
-- CHANGE OWNER'S NUMBER [Aqui](https://github.com/BrunoSobrino/Mystic-Support-EN/blob/master/config.js)
+- CLONE REPOSITORY [here](https://github.com/BrunoSobrino/Mystic-Support-EN/fork)
+- CHANGE OWNER'S NUMBER [here](https://github.com/BrunoSobrino/Mystic-Support-EN/blob/master/config.js)
 
 ### `—◉ 💫 ACTIVATE ON KOYEB 💫`
 
