@@ -1,11 +1,11 @@
-process.env['NODE_TLS_REJECT_UNAUTHORIZED'] = '0';
+process.env['NODE_TLS_REJECT_UNAUTHORIZED'] = true
 import './config.js';
 import { createRequire } from "module"; 
 import path, { join } from 'path'
 import { fileURLToPath, pathToFileURL } from 'url'
 import { platform } from 'process'
 import * as ws from 'ws';
-import { readdirSync, statSync, unlinkSync, existsSync, readFileSync, rmSync, watch } from 'fs';
+import { writeFileSync, readdirSync, statSync, unlinkSync, existsSync, readFileSync, copyFileSync, watch, rmSync, readdir, stat } from 'fs';
 import yargs from 'yargs';
 import { spawn } from 'child_process';
 import lodash from 'lodash';
@@ -18,23 +18,17 @@ import pino from 'pino';
 import { makeWASocket, protoType, serialize } from './lib/simple.js';
 import { Low, JSONFile } from 'lowdb';
 import { mongoDB, mongoDBV2 } from './lib/mongoDB.js';
-import store from './lib/store.js'
+const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 const { DisconnectReason, useMultiFileAuthState } = await import('@adiwajshing/baileys')
 const { CONNECTING } = ws
 const { chain } = lodash
 const PORT = process.env.PORT || process.env.SERVER_PORT || 3000
-
 protoType()
 serialize()
-
 global.__filename = function filename(pathURL = import.meta.url, rmPrefix = platform !== 'win32') { return rmPrefix ? /file:\/\/\//.test(pathURL) ? fileURLToPath(pathURL) : pathURL : pathToFileURL(pathURL).toString() }; global.__dirname = function dirname(pathURL) { return path.dirname(global.__filename(pathURL, true)) }; global.__require = function require(dir = import.meta.url) { return createRequire(dir) }
-
 global.API = (name, path = '/', query = {}, apikeyqueryname) => (name in global.APIs ? global.APIs[name] : name) + path + (query || apikeyqueryname ? '?' + new URLSearchParams(Object.entries({ ...query, ...(apikeyqueryname ? { [apikeyqueryname]: global.APIKeys[name in global.APIs ? global.APIs[name] : name] } : {}) })) : '')
-
 global.timestamp = { start: new Date }
-
 const __dirname = global.__dirname(import.meta.url)
-
 global.opts = new Object(yargs(process.argv.slice(2)).exitProcess(false).parse())
 global.prefix = new RegExp('^[' + (opts['prefix'] || 'xzXZ/i!#$%+£¢€¥^°=¶∆×÷π√✓©®:;?&.\\-HhhHBb.aA').replace(/[|\\{}()[\]^$+*?.\-\^]/g, '\\$&') + ']')
 
@@ -69,13 +63,27 @@ global.authFile = `MysticSession`
 const { state, saveState, saveCreds } = await useMultiFileAuthState(global.authFile)
 
 const connectionOptions = {
+logger: P({ level: 'silent' }),
 printQRInTerminal: true,
-logger: pino({ level: 'silent' }),
 auth: state,
-browser: ['MysticBot','Safari','9.7.0']
+browser: ['MysticBot','Safari','16.3.1'],
+patchMessageBeforeSending: (message) => {
+const requiresPatch = !!( message.buttonsMessage || message.templateMessage || message.listMessage );
+if (requiresPatch) { message = { viewOnceMessage: { message: { messageContextInfo: { deviceListMetadataVersion: 2, deviceListMetadata: {}, }, ...message, },},};}
+return message;},
+getMessage: async (key) => ( opts.store.loadMessage(/** @type {string} */(key.remoteJid), key.id) || opts.store.loadMessage(/** @type {string} */(key.id)) || {} ).message || { conversation: 'Please send messages again' },   
+//msgRetryCounterMap,
 }
 
 global.conn = makeWASocket(connectionOptions)
+/* Solucion mensajes en espera */
+global.conn = makeWASocket({ ...connectionOptions, ...opts.connectionOptions,
+getMessage: async (key) => (
+opts.store.loadMessage(/** @type {string} */(key.remoteJid), key.id) ||
+opts.store.loadMessage(/** @type {string} */(key.id)) || {}
+).message || { conversation: 'Please send messages again' },
+})
+
 conn.isInit = false
 
 if (!opts['test']) {
@@ -86,15 +94,92 @@ if (opts['autocleartmp'] && (global.support || {}).find) (tmp = [os.tmpdir(), 't
 
 if (opts['server']) (await import('./server.js')).default(global.conn, PORT)
 
-function clearTmp() {
-if (global.stopped == 'close') return    
-const tmp = [tmpdir(), join(__dirname, './tmp')]
-const filename = []
-tmp.forEach(dirname => readdirSync(dirname).forEach(file => filename.push(join(dirname, file))))  
-return filename.map(file => {
-const stats = statSync(file)
-if (stats.isFile() && (Date.now() - stats.mtimeMs >= 1000 * 60 * 3)) return unlinkSync(file) // 3 minutes
-return false })}
+function backupCreds() {
+  const SESSION_DIR = './MysticBot';
+  const SESSION_BACKUP_DIR = './sesionRespaldo';
+  const CREDENTIALS_FILE = 'creds.json';
+  const CREDENTIALS_BACKUP_FILE = 'creds.json';
+  const credsFilePath = path.join(SESSION_DIR, CREDENTIALS_FILE);
+  const backupFilePath = path.join(SESSION_BACKUP_DIR, CREDENTIALS_BACKUP_FILE);
+  copyFileSync(credsFilePath, backupFilePath);
+  console.log(`Creado el archivo de respaldo: ${backupFilePath}`);
+}
+function actualizarNumero() {
+  const configPath = path.join(__dirname, 'config.js');
+  const configData = readFileSync(configPath, 'utf8');
+  const updatedConfigData = configData.replace(/(global\.MysticBot\s*=\s*\[\s*\[')[0-9]+'(,\s*'Bot principal\s*-\s*MysticBot',\s*true\]\s*\])/, function(match) {
+    const archivoCreds = readFileSync(path.join(__dirname, 'sesionRespaldo/creds.json'));
+    const numero = JSON.parse(archivoCreds).me.id.split(':')[0];
+    return `global.botcomedia = [['${numero}', 'Bot principal  - MysticBot', true]]`;
+  });
+  writeFileSync(configPath, updatedConfigData);
+}
+
+function cleanupOnConnectionError() {
+  const SESSION_DIR = './MysticBot';
+  const SESSION_BACKUP_DIR = './sesionRespaldo';
+  const CREDENTIALS_BACKUP_FILE = 'creds.json';
+
+readdirSync(SESSION_DIR).forEach(file => {
+    const filePath = path.join(SESSION_DIR, file);
+    try {
+      unlinkSync(filePath);
+      console.log(`Archivo eliminado: ${filePath}`);
+    } catch (error) {
+      console.log(`No se pudo eliminar el archivo: ${filePath}`);
+    }
+  });
+
+  const backupFilePath = path.join(SESSION_BACKUP_DIR, CREDENTIALS_BACKUP_FILE);
+  try {
+    unlinkSync(backupFilePath);
+    console.log(`Archivo de copia de seguridad eliminado: ${backupFilePath}`);
+  } catch (error) {
+    console.log(`No se pudo eliminar el archivo de copia de seguridad o no existe: ${backupFilePath}`);
+  }
+  process.send('reset')
+} 
+
+function credsStatus() {
+  const SESSION_DIR = './MysticBot';
+  const SESSION_BACKUP_DIR = './sesionRespaldo';
+  const CREDENTIALS_FILE = 'creds.json';
+  const CREDENTIALS_BACKUP_FILE = 'creds.json';
+  
+  const credsFilePath = path.join(SESSION_DIR, CREDENTIALS_FILE);
+  const backupFilePath = path.join(SESSION_BACKUP_DIR, CREDENTIALS_BACKUP_FILE);
+  
+  let originalFileValid = false;
+  try {
+    const stats = statSync(credsFilePath);
+    originalFileValid = stats.isFile() && stats.size > 0;
+  } catch (error) {
+    console.log(`El archivo de credenciales no existe o está vacío. Generando código QR...`);
+    connectionOptions
+      console.log(`Escanea el código QR para continuar.`);
+  }
+  
+  if (!originalFileValid) {
+ 	const backupStats = statSync(backupFilePath);
+    if (backupStats.isFile() && backupStats.size > 0) {
+      copyFileSync(backupFilePath, credsFilePath);
+      console.log(`Archivo de credenciales restaurado desde la copia de seguridad: ${backupFilePath} -> ${credsFilePath}`);
+        process.send('reset')
+    } else {
+      console.log(`No se encuentra el archivo de credenciales válido y el archivo de copia de seguridad no es válido o falta: ${credsFilePath}, ${backupFilePath}`);
+      connectionOptions
+    }
+  } else {
+    console.log('Archivo de respaldo correcto, continuando inicio de sesión');
+  }
+}
+function waitTwoMinutes() {
+  return new Promise(resolve => {
+    setTimeout(() => {
+      resolve();
+    }, 2 * 60 * 1000); 
+  });
+}
 
 async function connectionUpdate(update) {
 const { connection, lastDisconnect, isNewLogin } = update
@@ -112,9 +197,67 @@ console.log(chalk.yellow('🚩ㅤScan this QR code, the QR code expires in 60 se
 if (connection == 'open') {
 console.log(chalk.yellow('▣──────────────────────────────···\n│\n│❧ 𝚂𝚄𝙲𝙲𝙴𝚂𝚂𝙵𝚄𝙻𝙻𝚈 𝙲𝙾𝙽𝙽𝙴𝙲𝚃𝙴𝙳 𝚃𝙾 𝚆𝙷𝙰𝚃𝚂𝙰𝙿𝙿 ✅\n│\n▣──────────────────────────────···'))}
 if (connection == 'close') {
-console.log(chalk.yellow(`🚩ㅤConnection closed, please delete the folder ${global.authFile} and rescan the QR code`))}
-}
+console.log(chalk.yellow(`🚩ㅤConnection closed, please delete the folder ${global.authFile} and rescan the QR code`));
+          } else {
+              console.log(chalk.yellow('🚩ㅤError al guardar el archivo de credenciales'));
 
+                    }
+          backupCreds();
+          actualizarNumero()
+          credsStatus();
+          try {
+            await db.read();
+
+            const chats = db.data.chats;
+            let successfulBans = 0;
+          
+            for (const [key, value] of Object.entries(chats)) {
+              if (value.isBanned === false) {
+                value.isBanned = true;
+                successfulBans++;
+              }
+            }
+
+            await db.write();
+          
+            if (successfulBans === 0) {
+              throw new Error('No se pudo banear ningún chat');
+            } else {
+              console.log(`Se banearon ${successfulBans} chats correctamente`);
+            }
+          
+          } catch (e) {
+            console.log(`Error: ${e.message}`);
+          } 
+          await waitTwoMinutes()         
+          try {
+            await db.read();
+        
+            const chats = db.data.chats;
+            let successfulUnbans = 0;
+          
+            for (const [key, value] of Object.entries(chats)) {
+              if (value.isBanned === true) {
+                value.isBanned = false;
+                successfulUnbans++;
+              }
+            }
+          
+            await db.write();
+          
+            if (successfulUnbans === 0) {
+              throw new Error('No se pudo desbanear ningún chat');
+            } else {
+              console.log(`Se desbanearon ${successfulUnbans} chats correctamente`);
+            }
+          
+          } catch (e) {
+            console.log(`Error: ${e.message}`);
+          }
+          
+          }
+        }
+ 
 process.on('uncaughtException', console.error)
 
 let isInit = true;
@@ -231,11 +374,136 @@ let [ffmpeg, ffprobe, ffmpegWebp, convert, magick, gm, find] = test
 let s = global.support = { ffmpeg, ffprobe, ffmpegWebp, convert, magick, gm, find }
 Object.freeze(global.support)
 }
+global.prefix = new RegExp('^[' + (opts['prefix'] || 'xzXZ/i!#$%+£¢€¥^°=¶∆×÷π√✓©®?&.\\-HhhHBb.aA' + conn.user.jid).replace(/[|\\{}()[\]^$+*?.\-\^]/g, '\\$&') + ']');
+
+function clearTmp() {
+  const tmp = [tmpdir(), join(__dirname, './tmp')]
+  const filename = []
+  tmp.forEach(dirname => readdirSync(dirname).forEach(file => filename.push(join(dirname, file))))
+  return filename.map(file => {
+      const stats = statSync(file)
+      if (stats.isFile() && (Date.now() - stats.mtimeMs >= 1000 * 60 * 3)) return unlinkSync(file) // 3 minutes
+      return false })
+  }
+  
+  function purgeSession() {
+      
+      let prekey = []
+      let directorio = readdirSync("./MysticBot")
+      let filesFolderPreKeys = directorio.filter((file) => {
+          if (file.startsWith('pre-key-')) {
+          return true 
+          }
+          const stats = fs.statSync(path.join(`./MysticBot/${file}`));
+          const mtime = new Date(stats.mtime);
+        const now = new Date();
+        const hourAgo = new Date(now - 60 * 60 * 1000);
+        return (
+          (file.startsWith('sender-key-') ||
+            file.startsWith('sender-key-memory-') ||
+            file.startsWith('sender-key-status@broadcast') ||
+            file.startsWith('session')) &&
+          mtime <= hourAgo
+        )
+      })
+      if (prekey.length === 0) {
+        console.log("Ningún archivo encontrado");
+      } else {
+      prekey = [...prekey, ...filesFolderPreKeys]
+      filesFolderPreKeys.forEach(files => {
+      unlinkSync(`./MysticBot/${files}`)
+      console.log(`${files} fueron eliminados`)
+  
+  })
+  }
+  }  
+  
+  function purgeSessionSB() {
+    const listaDirectorios = fs.readdirSync('./jadibts/');
+    console.log(listaDirectorios);
+    let SBprekey = [];
+  
+    listaDirectorios.forEach((filesInDir) => {
+      const directorio = fs.readdirSync(`./jadibts/${filesInDir}`);
+      console.log(directorio);
+      const DSBPreKeys = directorio.filter((fileInDir) => {
+        if (fileInDir.startsWith('pre-key-')) {
+          return true;
+        }
+        const stats = fs.statSync(path.join(`./jadibts/${filesInDir}/${fileInDir}`));
+        const mtime = new Date(stats.mtime);
+        const now = new Date();
+        const hourAgo = new Date(now - 60 * 60 * 1000);
+        return (
+          (fileInDir.startsWith('sender-key-') ||
+            fileInDir.startsWith('sender-key-memory-') ||
+            fileInDir.startsWith('sender-key-status@broadcast') ||
+            fileInDir.startsWith('session')) &&
+          mtime <= hourAgo
+        );
+      });
+      if (DSBPreKeys.length === 0) {
+        console.log('Ningún archivo encontrado');
+      } else {
+        SBprekey = [...SBprekey, ...DSBPreKeys];
+        DSBPreKeys.forEach((fileInDir) => {
+          fs.unlinkSync(`./jadibts/${filesInDir}/${fileInDir}`);
+          console.log(`${fileInDir} fueron eliminados`);
+        });
+      }
+    });
+  }
+  
+  function purgeOldFiles() {
+      const directories = ['./MysticBot/', './jadibts/'];
+      const oneHourAgo = new Date(Date.now() - (60 * 60 * 1000));
+     
+      directories.forEach((dir) => {
+          readdirSync(dir, (err, files) => {
+          if (err) throw err;
+          files.forEach((file) => {
+            const filePath = path.join(dir, file);
+            statSync(filePath, (err, stats) => {
+              if (err) throw err;
+              const createTime = new Date(stats.birthtimeMs);
+              const modTime = new Date(stats.mtimeMs);
+              const isOld = createTime < oneHourAgo || modTime < oneHourAgo;
+              const isCreds = file === 'creds.json';
+              if (stats.isFile() && isOld && !isCreds) {
+                  unlinkSync(filePath, (err) => {
+                  if (err) throw err;
+                  console.log(`Archivos ${filePath} borrados con éxito`);
+                });
+              } else {
+                console.log(`Archivo ${filePath} no borrado`);
+              }
+            });
+          });
+        });
+      });
+    }
+    purgeOldFiles()
+
 setInterval(async () => {
-if (stopped == 'close') return    
-var a = await clearTmp()        
-console.log(chalk.cyanBright(`\n▣───────────[ 𝙰𝚄𝚃𝙾𝙲𝙻𝙴𝙰𝚁 ]──────────────···\n│\n▣─❧ 𝙵𝙸𝙻𝙴𝚂 𝙳𝙴𝙻𝙴𝚃𝙴𝙳 ✅\n│\n▣───────────────────────────────────────···\n`))
-}, 180000)
+    backupCreds()
+    console.log(chalk.whiteBright(`\n▣────────[ BACKUP_CREDS ]───────────···\n│\n▣─❧ SUCCESSFUL ENDORSEMENT ✅\n│\n▣────────────────────────────────────···\n`))
+    }, 15 * 60 * 1000)
+setInterval(async () => {
+    clearTmp()
+    console.log(chalk.cyanBright(`\n▣───────────[ 𝙰𝚄𝚃𝙾𝙲𝙻𝙴𝙰𝚁 ]──────────────···\n│\n▣─❧ 𝙵𝙸𝙻𝙴𝚂 𝙳𝙴𝙻𝙴𝚃𝙴𝙳 ✅\n│\n▣───────────────────────────────────────···\n`))
+    }, 1000 * 60 * 3)
+setInterval(async () => {
+     purgeSession()
+    console.log(chalk.cyanBright(`\n▣────────[ AUTOPURGESESSIONS ]───────────···\n│\n▣─❧ FILES DELETED ✅\n│\n▣────────────────────────────────────···\n`))
+    }, 1000 * 60 * 60)
+setInterval(async () => {
+      purgeSessionSB()
+     console.log(chalk.cyanBright(`\n▣────────[ AUTO_PURGE_SESSIONS_SUB-BOTS ]───────────···\n│\n▣─❧ FILES DELETED ✅\n│\n▣────────────────────────────────────···\n`))
+    }, 1000 * 60 * 60)
+setInterval(async () => {
+     purgeOldFiles()
+    console.log(chalk.cyanBright(`\n▣────────[ AUTO_PURGE_OLDFILES ]───────────···\n│\n▣─❧ FILES DELETED ✅\n│\n▣────────────────────────────────────···\n`))
+    }, 1000 * 60 * 60)
 
 setInterval(async () => {
 if (stopped == 'close') return        
