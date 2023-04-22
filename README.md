@@ -52,7 +52,7 @@ TYPE THE FOLLOWING COMMANDS ONE AT A TIME:
 
 ## `TRANSLATE TO ENGLISH`
 
-<a href="https://https://github.com/ReyEndymion"><img src="https://https://github.com/ReyEndymion.png" width="250" height="250" alt="ReyEndymion"/></a>
+<a href="https://github.com/ReyEndymion"><img src="https://github.com/ReyEndymion.png" width="250" height="250" alt="ReyEndymion"/></a>
 
 `TheMystic-Bot-MD - By Bruno Sobrino`
 `ANI MX SCANS-MD by Rey Endymion`
